@@ -13,24 +13,7 @@ const char* password = "";
 
 String header;       // Variable para guardar el HTTP request
 const int PIN_LED = 2 ;
-
-//------------------------CODIGO HTML------------------------------
-String pagina =   "<!DOCTYPE html>"
-                  "<head>"
-                  "<meta charset='UTF-8'>"
-                  "<title>Document</title>"
-                  "</head>"
-                  "<body style='text-align: center;'>"
-                  "<h1>IoT Fantastico!</h1>"
-                  "<div>"
-                  "<p>LED = %0</p>"
-                  "<div>"
-                  "<input type='range' id='led' onchange='console.log(this.value)'>"
-                  "</div>"
-                  "</div>"
-                  "</body>"
-                  "</html>";
-
+const int PIN_POTE = 17;
 
 void displayInit(){
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -50,6 +33,7 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_POTE, INPUT);
   digitalWrite(PIN_LED, LOW);
 
   // Conexión WIFI
@@ -69,6 +53,48 @@ void setup() {
   // Para pantalla
   displayInit();
   display.setCursor(0,0);
+}
+
+// -- devuelve el codigo HTML
+String renderizarPagina(int led, int pote){
+  String pag =  "<!DOCTYPE html>"
+                "<html lang=\"en\">"
+                "<head>"
+                "<meta charset=\"UTF-8\">"
+                "<title>Servidor Web</title>"
+                "<style>"
+                "body {width: 400px; margin: 100px auto;}"
+                "h1 {text-align: center;}"
+                "div {border: 1px solid black;}"
+                "button {width: 100%; height: 50px;}"
+                "</style>"
+                "</head>"
+                "<body>"
+                "<h1>Cliente ESP32 UTN!</h1>"
+                "<div>";
+  
+  // Escribir valores
+  pag+= "<p>POTENCIA LED: <strong>%%"+led;
+  pag+= "</strong></p><p>POTENCIOMETRO: <strong>"+pote;
+  pag+= "</strong></p>";
+
+  // resto de la pagina
+  pag +="</div>"
+        "<div>"
+        "<p>Valor LED: </p><input type='range' id='led'>"
+        "<p>Mensaje LCD: </p><textarea id='msg' cols='30' rows='3'></textarea>"
+        "</div>"
+        "<div>"
+        "<button onclick='"
+        "window.location.href="
+        "\"led=\"+document.getElementById(\"led\")[\"value\"]+\"&\""
+        "+\"msg=\"+document.getElementById(\"msg\")[\"value\"]+\"&\"'>Actualizar</button>"
+        "</div>"
+        "</body>"
+        "</html>";
+
+  // pagina renderizada
+  return pag;
 }
 
 void loop() {
@@ -116,8 +142,8 @@ void loop() {
               analogWrite(PIN_LED, map(valor_int,0,100,0,255));
             } 
 
-            // Muestra la página web
-            client.println(pagina);
+            // escribe la nueva pagina
+            client.println(renderizarPagina(analogRead(PIN_LED),analogRead(PIN_POTE)));
 
            // la respuesta HTTP temina con una linea en blanco
             client.println();
